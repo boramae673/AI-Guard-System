@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 군 경계 이상상황 관제 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- Chart.js 그래프 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<header>
+    <div class="logo">🛡</div>
+
+    <h1>AI 군 경계 이상상황 관제 시스템</h1>
+
+    <nav>
+        <a class="nav-link active" data-page="monitor">실시간 모니터링</a>
+        <a class="nav-link" data-page="event">이벤트 목록</a>
+        <a class="nav-link" data-page="stats">통계</a>
+        <a class="nav-link" data-page="setting">설정</a>
+    </nav>
+
+    <div class="time" id="clock">--:--:--</div>
+</header>
+
+<div class="layout">
+
+    <aside>
+        <p class="menu active" data-page="monitor">▣ 실시간 모니터링</p>
+        <p class="menu" data-page="event">☷ 이벤트 목록</p>
+        <p class="menu" data-page="stats">▥ 통계</p>
+        <p class="menu" data-page="setting">⚙ 설정</p>
+    </aside>
+
+    <main>
+
+        <!-- 실시간 모니터링 페이지 -->
+        <section class="page active" id="monitor">
+
+            <div class="main-grid">
+
+                <div>
+                    <section class="cctv-card">
+
+                        <div class="section-title">
+                            <div>
+                                <h2>실시간 CCTV</h2>
+                                <p class="sub-text">AI 기반 객체 탐지 및 위험도 분석 화면</p>
+                            </div>
+
+                            <span class="live">● LIVE</span>
+                        </div>
+
+                        <div class="video-box">
+                            <img src="{{ url_for('video') }}" class="cctv">
+                        </div>
+
+                        <div class="camera-buttons">
+                            <button>Ⅱ 일시정지</button>
+                            <button>▣ 화면 캡처</button>
+                            <button>⛶ 전체 화면</button>
+                        </div>
+
+                    </section>
+
+                    <section class="bottom-grid">
+
+                        <div class="card">
+                            <h3>객체 상태 기준</h3>
+                            <p><span class="yellow">주의</span> 미인증 인원 감지</p>
+                            <p><span class="orange">경고</span> 제한구역 진입</p>
+                            <p><span class="red">위험</span> 20초 이상 체류</p>
+                        </div>
+
+                        <div class="card">
+                            <h3>AI 분석 모듈</h3>
+                            <p>YOLOv8 사람 객체 탐지</p>
+                            <p>ByteTrack 객체 추적</p>
+                            <p>InsightFace 얼굴 인증</p>
+                        </div>
+
+                    </section>
+                </div>
+                                <!-- 오른쪽 패널 -->
+                <section class="right-panel">
+
+                    <!-- 위험도 -->
+                    <div class="card risk-card">
+
+                        <h3>위험도 현황</h3>
+
+                        <div class="risk-content">
+
+                            <div class="score-circle">
+                                <span id="score">0</span>
+                                <small>/100</small>
+                            </div>
+
+                            <div class="risk-text-box">
+
+                                <p>
+                                    상태 :
+                                    <b id="riskText" class="safe-text">안전</b>
+                                </p>
+
+                                <small>
+                                    AI가 현재 상황을 실시간 분석 중입니다.
+                                </small>
+
+                            </div>
+
+                        </div>
+
+                        <div class="legend">
+
+                            <p><span class="dot green-dot"></span>안전 (0~29)</p>
+                            <p><span class="dot yellow-dot"></span>주의 (30~59)</p>
+                            <p><span class="dot orange-dot"></span>경고 (60~79)</p>
+                            <p><span class="dot red-dot"></span>위험 (80~100)</p>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ★ 실시간 그래프 -->
+                    <div class="card mini-graph-card">
+
+                        <div class="graph-header">
+
+                            <h3>실시간 위험도</h3>
+
+                            <span>LIVE</span>
+
+                        </div>
+
+                        <canvas id="riskLineChart"></canvas>
+
+                    </div>
+
+
+                    <!-- 관제 데이터 -->
+                    <div class="card data-card">
+
+                        <h3>관제 데이터</h3>
+
+                        <div class="data-row">
+
+                            <span>감지 인원</span>
+
+                            <b id="people">0</b>
+
+                        </div>
+
+                        <div class="data-row">
+
+                            <span>미인증 인원</span>
+
+                            <b id="unknown">0</b>
+
+                        </div>
+
+                        <div class="data-row">
+
+                            <span>제한구역 진입</span>
+
+                            <b id="restricted">0</b>
+
+                        </div>
+
+                        <div class="data-row">
+
+                            <span>고위험 인원</span>
+
+                            <b id="high">0</b>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- 시스템 상태 -->
+                    <div class="card">
+
+                        <h3>시스템 상태</h3>
+
+                        <p>
+                            <span class="green">
+                                ● 정상
+                            </span>
+                            객체 탐지 작동 중
+                        </p>
+
+                        <p>
+                            <span class="green">
+                                ● 정상
+                            </span>
+                            얼굴 인증 작동 중
+                        </p>
+
+                        <p>
+                            <span class="green">
+                                ● 정상
+                            </span>
+                            위험도 분석 작동 중
+                        </p>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================== -->
+        <!-- 이벤트 페이지 -->
+        <!-- ===================== -->
+
+        <section class="page" id="event">
+
+            <div class="page-title">
+
+                <div>
+
+                    <h2>이벤트 목록</h2>
+
+                    <p>
+                        실시간 발생한 이벤트 기록
+                    </p>
+
+                </div>
+
+            </div>
+
+            <div class="card event-table">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>시간</th>
+
+                            <th>객체</th>
+
+                            <th>이벤트</th>
+
+                            <th>위험도</th>
+
+                            <th>상태</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="eventBody">
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+                <!-- ===================== -->
+        <!-- 통계 페이지 -->
+        <!-- ===================== -->
+
+        <section class="page" id="stats">
+
+            <div class="page-title">
+
+                <div>
+                    <h2>통계</h2>
+                    <p>AI 시스템 실시간 통계 분석</p>
+                </div>
+
+            </div>
+
+            <!-- 상단 통계 카드 -->
+            <div class="stats-grid">
+
+                <div class="card stat-card">
+                    <h3>감지 인원</h3>
+                    <strong id="statPeople">0</strong>
+                    <small>현재 화면</small>
+                </div>
+
+                <div class="card stat-card">
+                    <h3>미인증</h3>
+                    <strong id="statUnknown">0</strong>
+                    <small>등록되지 않은 얼굴</small>
+                </div>
+
+                <div class="card stat-card">
+                    <h3>제한구역</h3>
+                    <strong id="statRestricted">0</strong>
+                    <small>제한구역 진입</small>
+                </div>
+
+                <div class="card stat-card">
+                    <h3>고위험</h3>
+                    <strong id="statHigh">0</strong>
+                    <small>20초 이상 체류</small>
+                </div>
+
+            </div>
+
+            <!-- 그래프 -->
+            <div class="stats-detail-grid">
+
+                <!-- 선 그래프 -->
+                <div class="card chart-big-card">
+
+                    <h3>실시간 위험도 추이</h3>
+
+                    <canvas id="riskStatsChart"></canvas>
+
+                </div>
+
+                <!-- 막대 그래프 -->
+                <div class="card chart-big-card">
+
+                    <h3>현재 위험 요소 분포</h3>
+
+                    <canvas id="riskBarChart"></canvas>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ===================== -->
+        <!-- 설정 -->
+        <!-- ===================== -->
+
+        <section class="page" id="setting">
+
+            <div class="page-title">
+
+                <div>
+
+                    <h2>설정</h2>
+
+                    <p>AI 시스템 동작 기준</p>
+
+                </div>
+
+            </div>
+
+            <div class="setting-grid">
+
+                <div class="card">
+
+                    <h3>위험도 기준</h3>
+
+                    <p><span class="yellow">주의</span> 등록되지 않은 얼굴 감지</p>
+
+                    <p><span class="orange">경고</span> 제한구역 진입</p>
+
+                    <p><span class="red">위험</span> 제한구역 20초 이상 체류</p>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>시스템 정보</h3>
+
+                    <p>객체 탐지 : YOLOv8</p>
+
+                    <p>객체 추적 : ByteTrack</p>
+
+                    <p>얼굴 인증 : InsightFace</p>
+
+                    <p>웹 서버 : Flask</p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+<script>
+let riskLabels = [];
+let riskScores = [];
+let eventCount = 1;
+
+function updateClock() {
+    const now = new Date();
+
+    document.getElementById("clock").innerText =
+        now.getFullYear() + "-" +
+        String(now.getMonth() + 1).padStart(2, "0") + "-" +
+        String(now.getDate()).padStart(2, "0") + "  " +
+        String(now.getHours()).padStart(2, "0") + ":" +
+        String(now.getMinutes()).padStart(2, "0") + ":" +
+        String(now.getSeconds()).padStart(2, "0");
+}
+
+const lineConfig = {
+    type: "line",
+    data: {
+        labels: riskLabels,
+        datasets: [{
+            label: "위험도 점수",
+            data: riskScores,
+            borderWidth: 3,
+            tension: 0.35,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        animation: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                min: 0,
+                max: 100
+            }
+        }
+    }
+};
+
+const barConfig = {
+    type: "bar",
+    data: {
+        labels: ["미인증", "제한구역", "고위험"],
+        datasets: [{
+            label: "현재 감지 수",
+            data: [0, 0, 0],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        animation: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+};
+
+const riskLineChart = new Chart(
+    document.getElementById("riskLineChart"),
+    lineConfig
+);
+
+const riskStatsChart = new Chart(
+    document.getElementById("riskStatsChart"),
+    lineConfig
+);
+
+const riskBarChart = new Chart(
+    document.getElementById("riskBarChart"),
+    barConfig
+);
+
+async function updateData() {
+    const res = await fetch("/data");
+    const data = await res.json();
+
+    document.getElementById("people").innerText = data.people;
+    document.getElementById("unknown").innerText = data.unknown;
+    document.getElementById("restricted").innerText = data.restricted;
+    document.getElementById("high").innerText = data.high;
+
+    document.getElementById("statPeople").innerText = data.people;
+    document.getElementById("statUnknown").innerText = data.unknown;
+    document.getElementById("statRestricted").innerText = data.restricted;
+    document.getElementById("statHigh").innerText = data.high;
+
+    document.getElementById("score").innerText = data.score;
+    document.getElementById("riskText").innerText = data.risk;
+
+    const now = new Date();
+
+    const timeLabel =
+        String(now.getHours()).padStart(2, "0") + ":" +
+        String(now.getMinutes()).padStart(2, "0") + ":" +
+        String(now.getSeconds()).padStart(2, "0");
+
+    riskLabels.push(timeLabel);
+    riskScores.push(data.score);
+
+    if (riskLabels.length > 10) {
+        riskLabels.shift();
+        riskScores.shift();
+    }
+
+    riskLineChart.update();
+    riskStatsChart.update();
+
+    riskBarChart.data.datasets[0].data = [
+        data.unknown,
+        data.restricted,
+        data.high
+    ];
+
+    riskBarChart.update();
+
+    const riskText = document.getElementById("riskText");
+    const circle = document.querySelector(".score-circle");
+
+    riskText.className = "";
+    circle.className = "score-circle";
+
+    if (data.risk === "위험") {
+        riskText.classList.add("danger-text");
+        circle.classList.add("circle-danger");
+        addEvent("20초 이상 체류 감지", "위험", "red-bg");
+    }
+
+    else if (data.risk === "경고") {
+        riskText.classList.add("warning-text");
+        circle.classList.add("circle-warning");
+        addEvent("제한구역 진입 감지", "경고", "orange-bg");
+    }
+
+    else if (data.risk === "주의") {
+        riskText.classList.add("caution-text");
+        circle.classList.add("circle-caution");
+        addEvent("미인증 인원 감지", "주의", "yellow-bg");
+    }
+
+    else {
+        riskText.classList.add("safe-text");
+        circle.classList.add("circle-safe");
+    }
+}
+
+function addEvent(message, level, colorClass) {
+    if (eventCount > 8) {
+        return;
+    }
+
+    const tbody = document.getElementById("eventBody");
+
+    const now = new Date();
+
+    const time =
+        String(now.getHours()).padStart(2, "0") + ":" +
+        String(now.getMinutes()).padStart(2, "0") + ":" +
+        String(now.getSeconds()).padStart(2, "0");
+
+    const tr = document.createElement("tr");
+
+    let levelClass = "yellow";
+
+    if (level === "위험") {
+        levelClass = "red";
+    }
+
+    else if (level === "경고") {
+        levelClass = "orange";
+    }
+
+    tr.innerHTML = `
+        <td>${time}</td>
+        <td>Person_${String(eventCount).padStart(2, "0")}</td>
+        <td>${message}</td>
+        <td><span class="${levelClass}">${level}</span></td>
+        <td><span class="tag ${colorClass}">기록됨</span></td>
+    `;
+
+    tbody.prepend(tr);
+
+    eventCount++;
+}
+
+function openPage(page) {
+    document.querySelectorAll(".page").forEach(function(p) {
+        p.classList.remove("active");
+    });
+
+    document.getElementById(page).classList.add("active");
+
+    document.querySelectorAll(".menu, .nav-link").forEach(function(m) {
+        m.classList.remove("active");
+    });
+
+    document.querySelectorAll(`[data-page="${page}"]`).forEach(function(m) {
+        m.classList.add("active");
+    });
+}
+
+document.querySelectorAll(".menu, .nav-link").forEach(function(menu) {
+    menu.onclick = function() {
+        openPage(this.dataset.page);
+    };
+});
+
+setInterval(updateClock, 1000);
+setInterval(updateData, 1000);
+
+updateClock();
+updateData();
+</script>
+
+</body>
+</html>
